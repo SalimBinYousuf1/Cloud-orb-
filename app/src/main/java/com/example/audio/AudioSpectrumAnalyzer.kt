@@ -15,10 +15,10 @@ class AudioSpectrumAnalyzer {
     companion object {
         const val FFT_SIZE = 256
         const val BIN_COUNT = FFT_SIZE / 2 // 128 bins
-        private const val MIN_DB = -100.0f
-        private const val MAX_DB = -30.0f
-        private const val DB_RANGE = MAX_DB - MIN_DB // 70 dB
-        private const val SMOOTHING_TIME_CONSTANT = 0.85f
+        private const val MIN_DB = -90.0f
+        private const val MAX_DB = -25.0f
+        private const val DB_RANGE = MAX_DB - MIN_DB // 65 dB
+        private const val SMOOTHING_TIME_CONSTANT = 0.80f
     }
 
     private val window = FloatArray(FFT_SIZE)
@@ -120,16 +120,14 @@ class AudioSpectrumAnalyzer {
             val clampedDb = db.coerceIn(MIN_DB, MAX_DB)
             val byteVal = ((clampedDb - MIN_DB) / DB_RANGE) * 255.0f
 
-            // Web Audio smoothingTimeConstant = 0.85
             smoothedBins[i] = smoothedBins[i] * SMOOTHING_TIME_CONSTANT + byteVal * (1.0f - SMOOTHING_TIME_CONSTANT)
             sum += smoothedBins[i]
         }
 
         val volume = sum / BIN_COUNT
 
-        // HTML audioBoostValue formula:
-        // audioBoostValue = audioBoostValue * 0.85 + (volume / 40.0) * 0.15
-        audioBoost = audioBoost * 0.85f + (volume / 40.0f) * 0.15f
+        // Dynamic audio boost mapping for responsive, vibrant cloud reaction
+        audioBoost = audioBoost * 0.82f + (volume / 32.0f) * 0.18f
         return audioBoost
     }
 
@@ -137,12 +135,12 @@ class AudioSpectrumAnalyzer {
      * Smooth decay when silence or inactive
      */
     fun decay(): Float {
-        audioBoost *= 0.85f
+        audioBoost *= 0.86f
         if (audioBoost < 0.001f) {
             audioBoost = 0.0f
         }
         for (i in 0 until BIN_COUNT) {
-            smoothedBins[i] *= 0.85f
+            smoothedBins[i] *= 0.86f
         }
         return audioBoost
     }

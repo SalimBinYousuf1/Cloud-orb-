@@ -91,13 +91,13 @@ class CloudOrbRenderer : GLSurfaceView.Renderer {
         val dt = ((nowNs - lastFrameTimeNs) * 1e-9f).coerceIn(0.001f, 0.05f)
         lastFrameTimeNs = nowNs
 
-        // Exponential smoothing filter for silky smooth audio boost transitions
+        // Exponential smoothing filter for responsive, silky smooth audio boost transitions
         val target = targetAudioBoost.coerceIn(0.0f, 2.5f)
-        val alpha = 1.0f - exp(-dt * 8.5f)
+        val alpha = 1.0f - exp(-dt * 9.5f)
         smoothedAudioBoost += (target - smoothedAudioBoost) * alpha
 
-        // Integrate phase continuously to guarantee 100% continuous fluid movement
-        continuousPhase += dt * (0.28f + smoothedAudioBoost * 0.90f)
+        // Integrate phase continuously for vibrant motion driven by sounds
+        continuousPhase += dt * (0.28f + smoothedAudioBoost * 1.25f)
 
         if (programId == 0) return
 

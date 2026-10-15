@@ -14,11 +14,11 @@ object CloudShader {
     """
 
     /**
-     * Fragment shader faithfully matching the reference video:
-     * - Top: vibrant deep royal/azure blue (#2472F5)
-     * - Middle: thick, billowing, volumetric white clouds with organic wispy cumulus crests
-     * - Bottom: soft pastel sky blue (#98BFF8)
-     * - Silky smooth, continuous fluid mixing with zero stutter, snap, or hang
+     * Fragment shader with:
+     * - Idle cloud occupying the lower half of the circle from below (up to the center equator).
+     * - Vibrant, lively macro billowing and expansion upwards into the deep blue sky driven by voice.
+     * - Fine, high-frequency smoky curls and micro-eddies reacting vibrantly to sounds.
+     * - 100% smooth, continuous phase integration with zero stutter or abrupt snaps.
      */
     const val FRAGMENT_SHADER_SOURCE = """
         precision highp float;
@@ -26,7 +26,7 @@ object CloudShader {
         uniform float time;
         uniform float audioBoost;
 
-        // Rotation matrix to remove grid bias and create realistic fluid vortices
+        // Rotation matrix for organic fluid mixing without axial grid artifacts
         const mat2 rot = mat2(0.80, -0.60, 0.60, 0.80);
 
         float hash21(vec2 p) {
@@ -69,62 +69,81 @@ object CloudShader {
             float t = time;
             float boost = clamp(audioBoost, 0.0, 2.5);
 
-            // Coordinated fluid flow: horizontal drift combined with gentle vertical vapor rise
-            vec2 flow = vec2(t * 0.075, -t * 0.022);
+            // Coordinated fluid flow: horizontal drift combined with gentle rising heat
+            vec2 flow = vec2(t * 0.08, -t * 0.025);
 
-            // Double domain warping to produce natural smoke/cloud fluid curls
+            // Dual domain warping creates natural swirling vortices
             vec2 q = vec2(
-                fbm(p * 1.75 + flow),
-                fbm(p * 1.75 + flow + vec2(5.2, 1.3))
+                fbm(p * 1.8 + flow),
+                fbm(p * 1.8 + flow + vec2(5.2, 1.3))
             );
 
-            // Secondary vortex swirls reacting smoothly to voice
+            // Vibrant swirling eddies that amplify and mix dynamically with voice sound
             vec2 swirl = vec2(
-                sin(p.y * 2.5 + t * 0.3) * 0.06,
-                cos(p.x * 2.5 - t * 0.25) * 0.06
-            ) * (1.0 + boost * 0.8);
+                sin(p.y * 3.2 + t * 0.5),
+                cos(p.x * 3.2 - t * 0.45)
+            ) * (0.05 + boost * 0.18);
 
             vec2 r = vec2(
-                fbm(p * 2.1 + 1.25 * q + swirl + vec2(t * 0.045, -t * 0.035)),
-                fbm(p * 2.1 + 1.25 * q - swirl + vec2(8.3, 2.8))
+                fbm(p * 2.2 + 1.25 * q + swirl + vec2(t * 0.05, -t * 0.04)),
+                fbm(p * 2.2 + 1.25 * q - swirl + vec2(8.3, 2.8))
             );
 
-            vec2 warpedP = p + (r - 0.5) * (0.85 + boost * 0.22);
+            vec2 warpedP = p + (r - 0.5) * (0.88 + boost * 0.32);
 
-            // Multi-scale cloud density field
-            float field = fbm(warpedP * 1.55 + vec2(t * 0.03, -t * 0.02));
-            float detail = noise(warpedP * 4.6 + vec2(t * 0.07, -t * 0.05));
+            // Multi-scale cloud noise fields
+            float field = fbm(warpedP * 1.6 + vec2(t * 0.035, -t * 0.02));
+            float detail = noise(warpedP * 4.4 + vec2(t * 0.08, -t * 0.06));
 
-            // Vertical envelope precisely matching the video:
-            // Top cloud crests billow across y = 0.45..0.72 into deep blue sky
-            float topThreshold = 0.52 + 0.23 * field + 0.07 * (detail - 0.5) + boost * 0.06;
-            float topMask = 1.0 - smoothstep(topThreshold - 0.14, topThreshold + 0.06, uv.y);
+            // Fine, high-frequency turbulence that flickers and curls vibrantly to sound
+            float fineTurbulence = noise(warpedP * 8.8 + vec2(t * 0.28, -t * 0.22));
+            float microCurl = noise(warpedP * 14.0 - vec2(t * 0.40, t * 0.35));
 
-            // Bottom cloud edge softly dissolves into light blue sky
-            float bottomThreshold = 0.16 + 0.10 * (1.0 - field);
-            float bottomMask = smoothstep(bottomThreshold - 0.08, bottomThreshold + 0.18, uv.y);
+            // Idle cloud is anchored occupying the lower half from below (center equator ~0.50)
+            float baseEquator = 0.50;
+            // Voice drives vibrant upward billowing expansion
+            float voiceRise = boost * 0.16;
 
-            // Combined volumetric cloud opacity
-            float cloudBand = topMask * bottomMask;
-            float density = smoothstep(0.08, 0.85, cloudBand * (field * 0.72 + detail * 0.28 + 0.22));
-            float cloudAlpha = clamp(density * 1.08, 0.0, 1.0);
+            // Macro billows and fine micro-movement driven by sound
+            float macroWave = (field - 0.5) * 0.26;
+            float fineMovement = (detail - 0.5) * (0.07 + boost * 0.12)
+                               + (fineTurbulence - 0.5) * (boost * 0.09)
+                               + (microCurl - 0.5) * (boost * 0.05);
 
-            // Exact sky gradient matching reference video:
-            // Top: vibrant rich royal blue (#2472F5)
-            // Bottom: soft pastel sky blue (#98BFF8)
+            float cloudCeiling = baseEquator + voiceRise + macroWave + fineMovement;
+
+            // Density fills the entire bottom half from below and billows softly at the ceiling
+            // Below cloudCeiling, density is 1.0 (thick, rich cloud occupying the lower half)
+            float density = 1.0 - smoothstep(cloudCeiling - 0.18, cloudCeiling + 0.05, uv.y);
+
+            // Add internal volumetric billowing density variations inside the cloud mass
+            float internalBillows = 0.88 + 0.12 * field + (detail - 0.5) * 0.08 + (fineTurbulence - 0.5) * (0.04 + boost * 0.06);
+            float cloudAlpha = clamp(density * internalBillows * 1.06, 0.0, 1.0);
+
+            // Rich sky background gradient in the upper half:
+            // Top: vibrant royal/azure blue (#2472F5)
+            // Mid-sky: soft azure blue (#60A5FA)
             vec3 skyTop = vec3(0.14, 0.45, 0.96);
-            vec3 skyBottom = vec3(0.60, 0.76, 0.98);
-            vec3 skyColor = mix(skyBottom, skyTop, pow(uv.y, 0.90));
+            vec3 skyMid = vec3(0.42, 0.68, 0.98);
+            vec3 skyColor = mix(skyMid, skyTop, smoothstep(0.35, 1.0, uv.y));
 
-            // Pure, bright cloud whites with subtle soft volumetric body
+            // Pure, bright white cloud billows with soft volumetric lighting
             vec3 cloudHighlight = vec3(1.0, 1.0, 1.0);
             vec3 cloudBody = vec3(0.97, 0.985, 1.0);
-            vec3 cloudColor = mix(cloudBody, cloudHighlight, smoothstep(0.45, 0.90, cloudAlpha));
+            // Subtle ambient shadow in crevices
+            vec3 cloudShadow = vec3(0.86, 0.92, 0.98);
 
-            // Soft atmospheric blending of cloud into the sky
-            vec3 finalColor = mix(skyColor, cloudColor, cloudAlpha * 0.985);
+            float lightGradient = smoothstep(0.4, 0.9, cloudAlpha) * (0.8 + 0.2 * detail);
+            vec3 cloudColor = mix(
+                mix(cloudShadow, cloudBody, smoothstep(0.2, 0.6, internalBillows)),
+                cloudHighlight,
+                lightGradient
+            );
 
-            // Razor-sharp anti-aliased circular mask
+            // Soft atmospheric blending between cloud and sky
+            vec3 finalColor = mix(skyColor, cloudColor, cloudAlpha);
+
+            // Razor-sharp circular frame mask with sub-pixel anti-aliasing
             vec2 center = vec2(aspect * 0.5, 0.5);
             float dist = length(p - center);
             float pixelSize = 1.25 / max(resolution.x, resolution.y);
