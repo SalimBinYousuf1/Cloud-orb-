@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">Cloud Orb</string>
+    <string name="prompt_idle">Tap here to allow microphone access &amp; activate cloud motion</string>
+    <string name="prompt_requesting">Requesting microphone access…</string>
+    <string name="prompt_connected">Voice connected — speak to move clouds!</string>
+    <string name="prompt_denied">Microphone access blocked. Tap to retry.</string>
+    <string name="prompt_permanently_denied">Microphone access denied. Tap to open Settings.</string>
+    <string name="orb_content_description">Realistic procedural smoke cloud orb. Tap to toggle microphone interaction.</string>
+</resources>

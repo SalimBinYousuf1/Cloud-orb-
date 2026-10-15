@@ -1,0 +1,6 @@
+{
+  "name": "Cloud Orb",
+  "description": "Realistic microphone-reactive smoke cloud orb with real-time procedural GLSL shader rendering and audio reactivity.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
